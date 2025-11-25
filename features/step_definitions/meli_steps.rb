@@ -14,8 +14,20 @@ When("presiono el boton filtros") do
     @meli_page.tocar_boton_filtros
 end
 
-When("aplico filtros de nuevo y ubicación") do
-    @meli_page.aplicar_filtros_de_nuevo_y_ubicacion
+When("aplico filtros de nuevo") do
+    @meli_page.aplicar_filtros_de_nuevo
+end
+
+When("aplico filtros de ubicación") do
+    @meli_page.aplicar_filtros_de_ubicacion
+end
+
+When ("aplico filtro de precio") do
+    @meli_page.aplicar_filtro_de_precio
+end
+
+When ("aplico los filtros") do
+    @meli_page.confirmar_y_aplicar_filtros
 end
 
 Then("Obtengo el precio y nombre de 5 productos") do

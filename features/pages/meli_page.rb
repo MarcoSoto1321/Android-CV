@@ -1,29 +1,96 @@
-# features/pages/home_page.rb
-
-# Hacemos que HomePage "herede" de BasePage
 class MeliPage < BasePage
 
     # --- Métodos de Selectores (Los elementos) ---
 
     def barra_de_busqueda
-        @driver.find_element(:id, 'com.mercadolibre:id/ui_components_toolbar_title_toolbar')
+        if ENV['PLATFORM'] == 'ios'
+            @driver.find_element(:name, 'Buscar en Mercado Libre')
+        else
+            @driver.find_element(:xpath, "//*[@resource-id='com.mercadolibre:id/ui_components_toolbar_search_field']")
+        end
     end
 
     def campo_de_texto_busqueda
-        @driver.find_element(:id, "com.mercadolibre:id/autosuggest_input_search")
+        if ENV['PLATFORM'] == 'ios'
+            @driver.find_element(:name, "search_core_autosuggest_search_bar_txt_field")
+        else
+            @driver.find_element(:xpath, "//*[@resource-id='com.mercadolibre:id/autosuggest_input_search']")
+        end
     end
 
     def titulo_resultados
-        @driver.find_element(:xpath, "//*[contains(@text, 'Resultados')]")
+        @driver.find_element(:xpath, "//*[contains(@text, 'Resultados') or contains(@content-desc, 'Resultados')]")
     end
 
     def boton_filtros
-        @driver.find_element(:xpath, '//android.widget.TextView[@text="Filtros (3)"]')
+        if ENV['PLATFORM'] == 'ios'
+            @driver.find_element(:name, 'SHAPE_FILTER_BUTTON')
+        else
+            @driver.find_element(:xpath, "//*[@text='Filtros (3)']")
+        end
     end
 
     def boton_filtro_condicion
-        @driver.find_element(:xpath, "//*[contains(@text, 'Condición')]")
+        if ENV['PLATFORM'] == 'ios'
+            condicion = @driver.find_elements(:name, "Condición")
+            condicion[3]
+        else
+            @driver.find_element(:xpath, "//*[@text='Condición' or @content-desc='Condición']")
+        end
     end
+
+    def boton_filtro_condicion_nuevo
+        if ENV['PLATFORM'] == 'ios'
+            @driver.find_element(:name, "Nuevo")
+        else
+            @driver.find_element(:xpath, "//*[@text='Nuevo' or @content-desc='Nuevo']")
+        end
+    end
+
+    def boton_filtro_envio
+        if ENV['PLATFORM'] == 'ios'
+            envios = @driver.find_elements(:name, "Envíos")
+            envios[3]
+        else
+            @driver.find_element(:xpath, "//*[@text='Envíos' or @content-desc='Envíos']")
+        end
+    end
+
+    def boton_filtro_envio_local
+        if ENV['PLATFORM'] == 'ios'
+            @driver.find_element(:name, "Local")
+        else
+            @driver.find_element(:xpath, "//*[@text='Local' or @content-desc='Local']")
+        end
+    end
+
+    def boton_filtro_precio
+        if ENV['PLATFORM'] == 'ios'
+            precio = @driver.find_elements(:name, "Ordenar por")
+            precio[2]
+        else
+            # Para Android: buscar directamente el texto "Ordenar por" sin usar índices
+            @driver.find_element(:xpath, "//*[@text='Ordenar por' or @content-desc='Ordenar por']")
+        end
+    end
+
+    def boton_ver_resultados
+        if ENV['PLATFORM'] == 'ios'
+            @driver.find_element(:xpath, "//*[contains(@name, 'resultados')]")
+        else
+            @driver.find_element(:xpath, "//*[contains(@text, 'resultado') or contains(@content-desc, 'resultado')]")
+        end
+    end
+
+    def boton_filtro_mayor_precio
+        if ENV['PLATFORM'] == 'ios'
+            @driver.find_element(:name, "Mayor precio")
+        else
+            @driver.find_element(:xpath, "//*[@text='Mayor precio' or @content-desc='Mayor precio']")
+        end
+    end
+
+    # --- Métodos de Acciones ---
 
     def tocar_barra_busqueda
         esperar_que_exista(10) { barra_de_busqueda.displayed? }
@@ -33,8 +100,11 @@ class MeliPage < BasePage
     def escribir_en_barra_busqueda(texto_producto)
         esperar_que_exista(10) { campo_de_texto_busqueda.displayed? }
         campo_de_texto_busqueda.send_keys(texto_producto)
-        
-        @driver.press_keycode(66) #enter
+        if ENV['PLATFORM'] == 'ios'
+            campo_de_texto_busqueda.send_keys(:return)
+        else
+            @driver.press_keycode(66) 
+        end
     end
 
     def tocar_boton_filtros
@@ -42,22 +112,96 @@ class MeliPage < BasePage
         boton_filtros.click
     end
 
-    def aplicar_filtros_de_nuevo_y_ubicacion
-        begin
-            puts "Intentando hacer clic en 'Condición'..."
-            condicion = esperar_que_exista(10) {
-            @driver.find_element(:uiautomator, 'new UiSelector().text("Condición")')
-            }
-            condicion.click
-        rescue
-            puts "No se pudo hacer clic en 'Condición', continuando..."
+    def aplicar_filtros_de_nuevo
+        esperar_y_click(10) { boton_filtro_condicion }
+        esperar_y_click(10) { boton_filtro_condicion_nuevo }
+        puts "Filtros de 'Nuevo' aplicados."
+    end
+
+    def aplicar_filtros_de_ubicacion
+        esperar_y_click(10) { boton_filtro_envio }
+        esperar_y_click(10) { boton_filtro_envio_local }
+        puts "Filtros de 'Ubicación Local' aplicados."
+    end
+
+    def aplicar_filtro_de_precio
+        # Hacer scroll hasta encontrar el botón
+        intentos = 0
+        max_intentos = 5
+        
+        loop do
+            begin
+                # Intentar encontrar el elemento
+                elemento = boton_filtro_precio
+                
+                # Si lo encontramos y está visible, hacemos click
+                if elemento&.displayed?
+                    elemento.click
+                    sleep 0.5
+                    esperar_y_click(10) { boton_filtro_mayor_precio }
+                    puts "Filtro de precio aplicado."
+                    break
+                end
+            rescue Selenium::WebDriver::Error::NoSuchElementError
+                # El elemento no existe todavía
+            end
+            
+            # Si llegamos al máximo de intentos, lanzar error
+            intentos += 1
+            if intentos >= max_intentos
+                raise "No se pudo encontrar el botón de ordenar por precio después de #{max_intentos} scrolls"
+            end
+            
+            # Hacer scroll dentro del contenedor de filtros
+            scroll_en_filtros
+            sleep 1
+        end
+    end
+    
+    def scroll_en_filtros
+        if ENV['PLATFORM'] == 'ios'
+            @driver.execute_script('mobile: scroll', direction: 'down')
+        else
+            # Para Android: hacer scroll dentro del RecyclerView o ScrollView de filtros
+            # Scroll en el área izquierda donde están los filtros
+            dims = @driver.window_size
+            
+            # Coordenadas para scroll en el lado izquierdo (área de filtros)
+            start_x = (dims.width * 0.25).to_i  # 25% del ancho (lado izquierdo)
+            start_y = (dims.height * 0.7).to_i  # 70% de altura (abajo)
+            end_y = (dims.height * 0.3).to_i    # 30% de altura (arriba)
+            
+            begin
+                # Método 1: scrollGesture en área específica
+                @driver.execute_script('mobile: scrollGesture', {
+                    left: start_x - 50,
+                    top: start_y,
+                    width: 100,
+                    height: end_y - start_y,
+                    direction: 'down',
+                    percent: 2.0
+                })
+            rescue => e
+                puts "Error en scrollGesture: #{e.message}"
+                # Fallback: swipe en el área izquierda
+                @driver.action
+                    .move_to_location(start_x, start_y)
+                    .pointer_down(:left)
+                    .pause(duration: 0.1)
+                    .move_to_location(start_x, end_y, duration: 0.6)
+                    .release
+                    .perform
+            end
         end
     end
 
+    def confirmar_y_aplicar_filtros
+        esperar_y_click(10) { boton_ver_resultados }
+        puts "Filtros confirmados y aplicados."
+    end
+
     def verificar_resultados(texto_producto)
-        # Espera 15 segs. a que el título de resultados aparezca
         esperar_que_exista(15) { titulo_resultados.displayed? }
-        
         expect(titulo_resultados.text.downcase).to include(texto_producto.downcase)
     end
 
@@ -65,24 +209,50 @@ class MeliPage < BasePage
         resultados = []
         nombres_vistos = Set.new
         
-        5.times do |i|
-            contenedores = @driver.find_elements(:xpath, "//android.view.View[@resource-id='polycard_component']")
+        loop do
+            if ENV['PLATFORM'] == 'ios'
+                contenedores = @driver.find_elements(:xpath, "//XCUIElementTypeOther[@name='polycard_core_component_general_content']")
+            else
+                contenedores = @driver.find_elements(:xpath, "//*[@resource-id='polycard_component']")
+            end
             
             contenedores.each do |tarjeta|
-                nombre = tarjeta.find_element(:xpath, ".//android.widget.TextView[1]").text rescue next
-                precio = tarjeta.find_element(:xpath, ".//android.widget.TextView[6]").text rescue next
-                
-                next if nombres_vistos.include?(nombre)
-                
-                nombres_vistos.add(nombre)
-                resultados << { nombre: nombre, precio: precio }
-                puts "#{resultados.size}. #{nombre} - #{precio}"
-                
                 break if resultados.size >= 5
+                
+                begin
+                    if ENV['PLATFORM'] == 'ios'
+                        texto_completo = tarjeta.attribute('label')
+                        next if texto_completo.nil? || texto_completo.empty?
+                        
+                        if texto_completo.include?('Agregar uno a tu carrito,')
+                            nombre = texto_completo.split('Agregar uno a tu carrito,')[1].split(',')[0].strip
+                        else
+                            nombre = texto_completo.split(',')[0].strip
+                        end
+                        
+                        precio_match = texto_completo.match(/(\d{5,6}\.\d)/)
+                        precio = precio_match ? "$#{precio_match[1]}" : next
+                    else
+                        # Android: el nombre está en el 4to TextView
+                        nombre = tarjeta.find_element(:xpath, ".//android.widget.TextView[4]").attribute('text')
+                        
+                        # Android: el precio tiene resource-id='current amount'
+                        precio = tarjeta.find_element(:xpath, ".//*[@resource-id='current amount']").attribute('text')
+                    end
+                    
+                    next if nombres_vistos.include?(nombre)
+                    
+                    nombres_vistos.add(nombre)
+                    resultados << { nombre: nombre, precio: precio }
+                    puts "#{resultados.size}. #{nombre} - #{precio}"
+                rescue => e
+                    next
+                end
             end
             
             break if resultados.size >= 5
             scroll_hacia_abajo
+            sleep 1
         end
         
         resultados
