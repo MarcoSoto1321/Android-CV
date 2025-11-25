@@ -1,140 +1,153 @@
-# Proyecto de Automatización (Appium + Ruby + Cucumber)
+# 📱 Proyecto de Automatización Móvil - Mercado Libre (Android & iOS)
 
-Este proyecto automatiza flujos de prueba en la aplicación de **Mercado Libre para Android**, utilizando **Appium**, **Ruby** y **Cucumber**.
+Este repositorio contiene un framework de automatización de pruebas End-to-End (E2E) para la aplicación nativa de **Mercado Libre**.
+
+Desarrollé este proyecto utilizando **Ruby**, **Cucumber** y **Appium**, implementando el patrón de diseño **Page Object Model (POM)** para garantizar un código escalable, mantenible y capaz de ejecutarse tanto en dispositivos **Android** como en **iOS**.
 
 ---
 
-## Pre-requisitos
+## 🛠️ Stack Tecnológico
 
-Antes de empezar, asegúrate de tener instalado el siguiente software:
+* **Lenguaje:** Ruby 3.x
+* **Framework de BDD:** Cucumber (Gherkin)
+* **Motor de Automatización:** Appium 2.0
+* **Drivers:**
+    * 🤖 Android: `UiAutomator2`
+    * 🍎 iOS: `XCUITest`
+* **Gestión de Dependencias:** Bundler
 
-- **Ruby** (preferiblemente v3.0+)
-- **Bundler** (manejador de gemas de Ruby)
-- **Bash**
+---
 
-```bash
-gem install bundler
-```
+## 📋 Prerrequisitos
 
-- **Node.js** (v18+)
-- **Appium 2.0 (servidor)**
+Antes de ejecutar el proyecto, asegúrate de tener el entorno configurado:
 
-```bash
-npm install -g appium@next
-```
+### General
+1.  **Ruby & Bundler:**
+    ```bash
+    gem install bundler
+    ```
+2.  **Appium Server:**
+    ```bash
+    npm install -g appium
+    ```
+3.  **Drivers de Appium:**
+    ```bash
+    appium driver install uiautomator2
+    appium driver install xcuitest
+    ```
 
-- **Driver UiAutomator2 (para Android)**
-
-```bash
-appium driver install uiautomator2
-```
-
-- **Android Studio** (para el Android SDK)
-
-### Variables de Entorno de Android
-
-Asegúrate de tener `ANDROID_HOME` (o `ANDROID_SDK_ROOT`) configurado en tu archivo `.zshrc` o `.bash_profile`.
-
-Ejemplo:
-
+### Variables de Entorno (Android)
+Asegúrate de tener `ANDROID_HOME` configurado en tu `.zshrc` o `.bash_profile`:
 ```bash
 export ANDROID_HOME="/Users/[tu_usuario]/Library/Android/sdk"
 ```
 
 ---
 
-## Instalación del Proyecto
+## 🚀 Instalación y Configuración
 
-1. Abre una terminal y navega a la carpeta del proyecto (`pruebaAndroid`).
-2. Instala todas las dependencias (gemas) del proyecto:
+1.  **Clona el repositorio:**
+
+    ```bash
+    git clone <URL_DEL_REPO>
+    cd Android-CV
+    ```
+
+2.  **Instala las gemas:**
+
+    ```bash
+    bundle install
+    ```
+
+3.  **Configura tu dispositivo:**
+    
+    Edita el archivo `features/support/env.rb` y actualiza las capacidades según tu dispositivo real:
+
+    ```ruby
+    # Ejemplo para Android
+    deviceName: "TU_DEVICE_ID_ADB", 
+
+    # Ejemplo para iOS (iPhone)
+    udid: "TU_UDID_DE_IPHONE",
+    bundleId: "com.mercadolibre" 
+    ```
+
+---
+
+## 🏃🏻‍♂️ Ejecución de las Pruebas
+
+Para ejecutar las pruebas se requieren dos terminales.
+
+### Terminal 1: Servidor Appium
+
+Inicia el servidor especificando la ruta base (según la configuración de `env.rb`):
 
 ```bash
-bundle install
+appium --base-path /wd/hub
+```
+
+### Terminal 2: Ejecución de Tests
+
+El framework detecta automáticamente la plataforma.
+
+**Opción A: Ejecutar en Android (por defecto)**
+
+```bash
+bundle exec cucumber
+```
+
+**Opción B: Ejecutar en iOS**
+
+Pasando la variable de entorno `PLATFORM`:
+
+```bash
+PLATFORM=ios bundle exec cucumber
 ```
 
 ---
 
-## Cómo Ejecutar las Pruebas
+## 📸 Evidencias de Ejecución
 
-La ejecución requiere **2 terminales abiertas al mismo tiempo**.
+A continuación se presentan capturas de pantalla de la ejecución exitosa en dispositivos reales.
 
----
+### 🤖 Android
 
-### Prepara el Dispositivo
 
-1. Conecta tu dispositivo físico Android vía USB.
-2. Activa las _Opciones para desarrolladores_ y la _Depuración por USB_ en el dispositivo.
-3. Verifica que tu dispositivo esté conectado ejecutando:
 
-```bash
-adb devices
-```
+### 🍎 iOS
 
-Deberías ver algo como:
-
-```
-815e0748	device
-```
+![alt text](image.png)
 
 ---
 
-### (Terminal 1) Inicia el Servidor Appium
+## 📄 Estructura del Proyecto
 
-Este proyecto está configurado para conectarse al **puerto 8200**.
-
-Abre tu primera terminal e inicia el servidor Appium:
-
-```bash
-appium --port 8200
 ```
-
-> No cierres esta terminal.
-
----
-
-### (Terminal 2) Ejecuta las Pruebas
-
-Abre una nueva terminal, navega al proyecto (`~/Desktop/pruebaAndroid`) y ejecuta:
-
-```bash
-bundle exec cucumber features/meli.feature
-```
-
-Para ver más detalles durante la ejecución (como los `puts`), usa la opción `--verbose`:
-
-```bash
-bundle exec cucumber features/meli.feature --verbose
+.
+├── features
+│   ├── meli.feature           # Archivos Gherkin (Escenarios)
+│   ├── pages
+│   │   ├── base_page.rb       # Métodos comunes (esperas, scroll, acciones)
+│   │   └── meli_page.rb       # Page Object principal (Lógica dual OS)
+│   ├── step_definitions
+│   │   └── meli_steps.rb      # Conexión entre Gherkin y Ruby
+│   └── support
+│       └── env.rb             # Configuración del Driver y Capabilities
+├── Gemfile                    # Dependencias de Ruby
+└── README.md                  # Documentación del proyecto
 ```
 
 ---
 
-## Configuración
+## 📝 Escenario de Prueba
 
-### Cambiar el Dispositivo
+El escenario automatizado realiza las siguientes acciones:
 
-Si tu dispositivo cambia, debes actualizar su **ID** (el que obtienes con `adb devices`) en el archivo de configuración.
-
-Archivo: `features/support/env.rb`
-
-Línea a cambiar:
-
-```ruby
-"appium:options": {
-  deviceName: "815e0748", # <-- CAMBIA ESTE VALOR
-  # ...
-}
-```
-
----
-
-### Ejecutar en iOS
-
-El proyecto también puede ejecutarse en **iOS** (si se configuran las _capabilities_ en `env.rb`).
-
-Para ejecutar las pruebas en iOS, usa la variable de entorno `PLATFORM`:
-
-```bash
-PLATFORM=ios bundle exec cucumber features/meli.feature
-```
+1. Buscar un producto en Mercado Libre
+2. Aplicar filtro de condición "Nuevo"
+3. Aplicar filtro de ubicación "Local"
+4. Ordenar por "Mayor precio"
+5. Extraer nombre y precio de los primeros 5 productos
 
 ---
