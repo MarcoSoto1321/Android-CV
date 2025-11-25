@@ -113,7 +113,7 @@ A continuación se presentan capturas de pantalla de la ejecución exitosa en di
 
 ### 🤖 Android
 
-
+![alt text](image-1.png)
 
 ### 🍎 iOS
 

@@ -47,30 +47,11 @@ class MeliPage < BasePage
         end
     end
 
-    def boton_filtro_envio
-        if ENV['PLATFORM'] == 'ios'
-            envios = @driver.find_elements(:name, "Envíos")
-            envios[3]
-        else
-            @driver.find_element(:xpath, "//*[@text='Envíos' or @content-desc='Envíos']")
-        end
-    end
-
     def boton_filtro_envio_local
         if ENV['PLATFORM'] == 'ios'
             @driver.find_element(:name, "Local")
         else
             @driver.find_element(:xpath, "//*[@text='Local' or @content-desc='Local']")
-        end
-    end
-
-    def boton_filtro_precio
-        if ENV['PLATFORM'] == 'ios'
-            precio = @driver.find_elements(:name, "Ordenar por")
-            precio[2]
-        else
-            # Para Android: buscar directamente el texto "Ordenar por" sin usar índices
-            @driver.find_element(:xpath, "//*[@text='Ordenar por' or @content-desc='Ordenar por']")
         end
     end
 
@@ -119,79 +100,96 @@ class MeliPage < BasePage
     end
 
     def aplicar_filtros_de_ubicacion
-        esperar_y_click(10) { boton_filtro_envio }
-        esperar_y_click(10) { boton_filtro_envio_local }
+        if ENV['PLATFORM'] == 'ios'
+            envios = @driver.find_elements(:name, "Envíos")
+            envios[3].click
+            esperar_y_click(10) { boton_filtro_envio_local }
+        else
+            # Android: scroll y click en Envíos
+            scroll_y_click_en_menu_lateral("Envíos")
+            esperar_y_click(10) { boton_filtro_envio_local }
+        end
         puts "Filtros de 'Ubicación Local' aplicados."
     end
 
     def aplicar_filtro_de_precio
-        # Hacer scroll hasta encontrar el botón
+        if ENV['PLATFORM'] == 'ios'
+            scroll_hacia_abajo
+            sleep 1
+            precio = @driver.find_elements(:name, "Ordenar por")
+            precio[2].click
+            esperar_y_click(10) { boton_filtro_mayor_precio }
+        else
+            # Android: scroll y click en Ordenar por
+            scroll_y_click_en_menu_lateral("Ordenar por")
+            esperar_y_click(10) { boton_filtro_mayor_precio }
+        end
+        puts "Filtro de precio aplicado."
+    end
+    
+    # Método unificado para hacer scroll y click en el menú lateral de filtros (Android)
+    def scroll_y_click_en_menu_lateral(texto_elemento)
         intentos = 0
-        max_intentos = 5
+        max_intentos = 6
+        encontrado = false
         
         loop do
             begin
-                # Intentar encontrar el elemento
-                elemento = boton_filtro_precio
+                # Buscar todos los elementos que coincidan con el texto
+                elementos = @driver.find_elements(:xpath, "//*[@text='#{texto_elemento}' or @content-desc='#{texto_elemento}']")
                 
-                # Si lo encontramos y está visible, hacemos click
-                if elemento&.displayed?
-                    elemento.click
-                    sleep 0.5
-                    esperar_y_click(10) { boton_filtro_mayor_precio }
-                    puts "Filtro de precio aplicado."
-                    break
+                # Intentar hacer click en el primer elemento visible
+                elementos.each do |elemento|
+                    if elemento.displayed? && elemento.enabled?
+                        puts "✓ '#{texto_elemento}' encontrado"
+                        elemento.click
+                        encontrado = true
+                        break
+                    end
                 end
-            rescue Selenium::WebDriver::Error::NoSuchElementError
-                # El elemento no existe todavía
+                
+                break if encontrado
+            rescue Selenium::WebDriver::Error::NoSuchElementError, Selenium::WebDriver::Error::StaleElementReferenceError
+                # Elemento no encontrado o stale, continuar con scroll
             end
             
-            # Si llegamos al máximo de intentos, lanzar error
             intentos += 1
             if intentos >= max_intentos
-                raise "No se pudo encontrar el botón de ordenar por precio después de #{max_intentos} scrolls"
+                raise "No se encontró '#{texto_elemento}' después de #{max_intentos} intentos"
             end
             
-            # Hacer scroll dentro del contenedor de filtros
-            scroll_en_filtros
-            sleep 1
+            # Hacer scroll en el menú lateral
+            hacer_scroll_menu_lateral
+            sleep 0.2
         end
     end
     
-    def scroll_en_filtros
-        if ENV['PLATFORM'] == 'ios'
-            @driver.execute_script('mobile: scroll', direction: 'down')
-        else
-            # Para Android: hacer scroll dentro del RecyclerView o ScrollView de filtros
-            # Scroll en el área izquierda donde están los filtros
-            dims = @driver.window_size
-            
-            # Coordenadas para scroll en el lado izquierdo (área de filtros)
-            start_x = (dims.width * 0.25).to_i  # 25% del ancho (lado izquierdo)
-            start_y = (dims.height * 0.7).to_i  # 70% de altura (abajo)
-            end_y = (dims.height * 0.3).to_i    # 30% de altura (arriba)
-            
-            begin
-                # Método 1: scrollGesture en área específica
-                @driver.execute_script('mobile: scrollGesture', {
-                    left: start_x - 50,
-                    top: start_y,
-                    width: 100,
-                    height: end_y - start_y,
-                    direction: 'down',
-                    percent: 2.0
-                })
-            rescue => e
-                puts "Error en scrollGesture: #{e.message}"
-                # Fallback: swipe en el área izquierda
-                @driver.action
-                    .move_to_location(start_x, start_y)
-                    .pointer_down(:left)
-                    .pause(duration: 0.1)
-                    .move_to_location(start_x, end_y, duration: 0.6)
-                    .release
-                    .perform
-            end
+    # Método de scroll optimizado para el menú lateral de filtros
+    def hacer_scroll_menu_lateral
+        dims = @driver.window_size
+        
+        # Coordenadas del menú lateral izquierdo
+        x = (dims.width * 0.15).to_i      # 15% del ancho (izquierda)
+        start_y = (dims.height * 0.65).to_i  # 65% altura
+        end_y = (dims.height * 0.35).to_i    # 35% altura
+        
+        begin
+            @driver.action
+                .move_to_location(x, start_y)
+                .pointer_down(:left)
+                .pause(duration: 0.05)
+                .move_to_location(x, end_y, duration: 0.25)
+                .release
+                .perform
+        rescue => e
+            # Fallback con swipe
+            @driver.swipe(
+                start_x: x,
+                start_y: start_y,
+                end_x: x,
+                end_y: end_y,
+                duration: 250
+            )
         end
     end
 
