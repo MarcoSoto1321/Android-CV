@@ -63,6 +63,14 @@ class MeliPage < BasePage
         end
     end
 
+    def boton_ordenar_por
+        if ENV['PLATFORM'] == 'ios'
+            @driver.find_element(:name, "Ordenar por")
+        else
+            @driver.find_element(:xpath, "//android.widget.TextView[@text='Ordenar por']")
+        end
+    end
+
     def boton_filtro_mayor_precio
         if ENV['PLATFORM'] == 'ios'
             @driver.find_element(:name, "Mayor precio")
@@ -120,9 +128,23 @@ class MeliPage < BasePage
             precio[2].click
             esperar_y_click(10) { boton_filtro_mayor_precio }
         else
-            # Android: scroll y click en Ordenar por
-            scroll_y_click_en_menu_lateral("Ordenar por")
-            esperar_y_click(10) { boton_filtro_mayor_precio }
+        # Android: Scroll dentro del ListView de filtros
+            begin
+                scrollable = 'new UiScrollable(new UiSelector().className("android.widget.ListView")).scrollIntoView(new UiSelector().text("Mayor precio"))'
+                @driver.find_element(:uiautomator, scrollable).click
+            rescue
+                # Fallback: scroll manual
+                5.times do
+                    begin
+                        boton_ordenar_por.click
+                        boton_filtro_mayor_precio.click
+                        break
+                    rescue
+                        hacer_scroll_menu_lateral
+                        sleep 0.5
+                    end
+                end
+            end
         end
         puts "Filtro de precio aplicado."
     end
@@ -140,8 +162,11 @@ class MeliPage < BasePage
     def obtener_nombres_y_precios_de_productos
         resultados = []
         nombres_vistos = Set.new
+        intentos_sin_nuevos = 0
         
-        loop do
+        while resultados.size < 5 && intentos_sin_nuevos < 3
+            size_antes = resultados.size
+            
             if ENV['PLATFORM'] == 'ios'
                 contenedores = @driver.find_elements(:xpath, "//XCUIElementTypeOther[@name='polycard_core_component_general_content']")
             else
@@ -165,10 +190,8 @@ class MeliPage < BasePage
                         precio_match = texto_completo.match(/(\d{5,6}\.\d)/)
                         precio = precio_match ? "$#{precio_match[1]}" : next
                     else
-                        # Android: el nombre está en el 4to TextView
-                        nombre = tarjeta.find_element(:xpath, ".//android.widget.TextView[4]").attribute('text')
-                        
-                        # Android: el precio tiene resource-id='current amount'
+                        # Android: índice [0] = nombre, resource-id='current amount' = precio
+                        nombre = tarjeta.find_element(:xpath, ".//android.widget.TextView[1]").attribute('text')
                         precio = tarjeta.find_element(:xpath, ".//*[@resource-id='current amount']").attribute('text')
                     end
                     
@@ -182,9 +205,14 @@ class MeliPage < BasePage
                 end
             end
             
+            intentos_sin_nuevos = (size_antes == resultados.size) ? intentos_sin_nuevos + 1 : 0
+            
             break if resultados.size >= 5
-            scroll_hacia_abajo
-            sleep 1
+            
+            if intentos_sin_nuevos < 3
+                scroll_hacia_abajo
+                sleep 2
+            end
         end
         
         resultados

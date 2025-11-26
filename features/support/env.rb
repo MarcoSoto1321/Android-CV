@@ -11,7 +11,7 @@ Before do
     caps_opts = {
         platformName: "Android",
         "appium:options": {
-            deviceName: "emulator-5554",
+            deviceName: "815e0748",
             automationName: "UiAutomator2",
             appPackage: "com.mercadolibre",
             appActivity: "com.mercadolibre.splash.SplashActivity",

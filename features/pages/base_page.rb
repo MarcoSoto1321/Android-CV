@@ -123,30 +123,25 @@ class BasePage
     
     # Método de scroll optimizado para el menú lateral de filtros
     def hacer_scroll_menu_lateral
-        dims = @driver.window_size
-        
-        # Coordenadas del menú lateral izquierdo
-        x = (dims.width * 0.15).to_i      # 15% del ancho (izquierda)
-        start_y = (dims.height * 0.65).to_i  # 65% altura
-        end_y = (dims.height * 0.35).to_i    # 35% altura
-        
-        begin
-            @driver.action
-                .move_to_location(x, start_y)
-                .pointer_down(:left)
-                .pause(duration: 0.05)
-                .move_to_location(x, end_y, duration: 0.25)
-                .release
-                .perform
-        rescue => e
-            # Fallback con swipe
+        if ENV['PLATFORM'] == 'ios'
+            scroll_hacia_abajo
+        else
+            # Android: Scroll más largo en el menú lateral
+            dims = @driver.window_size
+            
+            x = 93  # Mitad del menú lateral
+            start_y = (dims.height * 0.7).to_i  # Más arriba (70%)
+            end_y = (dims.height * 0.2).to_i    # Más abajo (20%) - scroll más largo
+            
             @driver.swipe(
                 start_x: x,
                 start_y: start_y,
                 end_x: x,
                 end_y: end_y,
-                duration: 250
+                duration: 500  # Más lento para ser más confiable
             )
         end
+    rescue => e
+        puts "Error en scroll del menú lateral: #{e.message}"
     end
 end
