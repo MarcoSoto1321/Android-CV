@@ -1,4 +1,4 @@
-# 📱 Proyecto de Automatización Móvil - Mercado Libre (Android & iOS)
+# Proyecto de Automatización Móvil - Mercado Libre (Android & iOS)
 
 Este repositorio contiene un framework de automatización de pruebas End-to-End (E2E) para la aplicación nativa de **Mercado Libre**.
 
@@ -12,13 +12,13 @@ Desarrollé este proyecto utilizando **Ruby**, **Cucumber** y **Appium**, implem
 * **Framework de BDD:** Cucumber (Gherkin)
 * **Motor de Automatización:** Appium 2.0
 * **Drivers:**
-    * 🤖 Android: `UiAutomator2`
-    * 🍎 iOS: `XCUITest`
+    * Android: `UiAutomator2`
+    * iOS: `XCUITest`
 * **Gestión de Dependencias:** Bundler
 
 ---
 
-## 📋 Prerrequisitos
+## Prerrequisitos
 
 Antes de ejecutar el proyecto, asegúrate de tener el entorno configurado:
 
@@ -50,7 +50,7 @@ export ANDROID_HOME="/Users/[tu_usuario]/Library/Android/sdk"
 1.  **Clona el repositorio:**
 
     ```bash
-    git clone <URL_DEL_REPO>
+    git clone https://github.com/MarcoSoto1321/Android-CV.git
     cd Android-CV
     ```
 
@@ -75,7 +75,7 @@ export ANDROID_HOME="/Users/[tu_usuario]/Library/Android/sdk"
 
 ---
 
-## 🏃🏻‍♂️ Ejecución de las Pruebas
+## 🏃🏻Ejecución de las Pruebas
 
 Para ejecutar las pruebas se requieren dos terminales.
 
@@ -107,21 +107,21 @@ PLATFORM=ios bundle exec cucumber
 
 ---
 
-## 📸 Evidencias de Ejecución
+## Evidencias de Ejecución
 
 A continuación se presentan capturas de pantalla de la ejecución exitosa en dispositivos reales.
 
-### 🤖 Android
+### Android
 
 ![alt text](image-1.png)
 
-### 🍎 iOS
+### iOS
 
 ![alt text](image.png)
 
 ---
 
-## 📄 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 .
@@ -140,7 +140,7 @@ A continuación se presentan capturas de pantalla de la ejecución exitosa en di
 
 ---
 
-## 📝 Escenario de Prueba
+## Escenario de Prueba
 
 El escenario automatizado realiza las siguientes acciones:
 
